@@ -9,11 +9,20 @@
 ;	d1.l = CRC32
 
 ;	uses d0.l, d2.l, a1, a2
+
+; usage:
+;		lea	Address,a1
+;		move.l	#length,d0
+;		bsr.w	CalcCRC32
+;		cmpi.l	#expected_value,d1
+;		bne.w	Doesnt_match				; branch if CRC32 doesn't match
 ; ---------------------------------------------------------------------------
 
 CalcCRC32:
-		subq.l	#1,d0					; subtract 1 for loops
 		moveq	#-1,d1					; initial value
+		tst.l	d0					; check if size is valid
+		bmi.s	.exit					; branch if not
+		beq.s	.exit
 		lea	CRC32_Table(pc),a2
 		
 	.loop:
@@ -25,8 +34,10 @@ CalcCRC32:
 		lsr.l	#8,d1					; shift right 1 byte
 		move.l	(a2,d2.w),d2
 		eor.l	d2,d1					; eor with value from table
-		dbf	d0,.loop				; repeat for all bytes
+		subq.l	#1,d0					; subtract 1 from size
+		bne.s	.loop					; repeat if not 0
 		
+	.exit:
 		not.l	d1					; final result
 		rts
 
